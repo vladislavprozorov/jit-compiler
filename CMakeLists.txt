@@ -29,6 +29,7 @@ if(KESTREL_SANITIZE)
 endif()
 
 add_library(kestrel_core
+  src/frontend/lexer.cpp
   src/support/diagnostics.cpp
 )
 target_include_directories(kestrel_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
