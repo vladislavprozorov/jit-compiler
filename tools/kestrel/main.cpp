@@ -6,22 +6,26 @@
 #include <string>
 #include <string_view>
 
+#include "frontend/ast_printer.h"
 #include "frontend/lexer.h"
+#include "frontend/parser.h"
+#include "support/arena.h"
 #include "support/diagnostics.h"
 
 namespace {
 
 constexpr std::string_view kUsage =
-    "usage: kestrel [--dump-tokens] <file.ks>\n"
+    "usage: kestrel [--dump-tokens | --dump-ast] <file.ks>\n"
     "\n"
     "options:\n"
     "  --dump-tokens   print the token stream and exit\n"
+    "  --dump-ast      print the syntax tree and exit\n"
     "  -h, --help      show this message\n";
 
-enum class Mode { DumpTokens };
+enum class Mode { DumpTokens, DumpAst };
 
 struct Options {
-  Mode mode = Mode::DumpTokens;
+  Mode mode = Mode::DumpAst;
   std::string path;
 };
 
@@ -37,6 +41,8 @@ std::optional<Options> parse_args(int argc, char** argv, int& exit_code) {
     }
     if (arg == "--dump-tokens") {
       options.mode = Mode::DumpTokens;
+    } else if (arg == "--dump-ast") {
+      options.mode = Mode::DumpAst;
     } else if (!arg.empty() && arg.front() == '-') {
       std::cerr << "kestrel: unknown option '" << arg << "'\n" << kUsage;
       return std::nullopt;
@@ -78,6 +84,13 @@ void dump_tokens(std::string_view source, kestrel::DiagnosticEngine& diags) {
   }
 }
 
+void dump_ast(std::string_view source, kestrel::DiagnosticEngine& diags) {
+  kestrel::Arena arena;
+  kestrel::Parser parser(source, arena, diags);
+  const kestrel::Module module = parser.parse_module();
+  std::cout << kestrel::print_module(module);
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -97,6 +110,9 @@ int main(int argc, char** argv) {
   switch (options->mode) {
     case Mode::DumpTokens:
       dump_tokens(*source, diags);
+      break;
+    case Mode::DumpAst:
+      dump_ast(*source, diags);
       break;
   }
 
