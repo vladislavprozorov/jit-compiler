@@ -39,3 +39,6 @@ if(KESTREL_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+add_executable(kestrel tools/kestrel/main.cpp)
+target_link_libraries(kestrel PRIVATE kestrel_core)
