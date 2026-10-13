@@ -13,13 +13,17 @@ constexpr bool is_alpha(char c) noexcept {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-constexpr bool is_dec_digit(char c) noexcept { return c >= '0' && c <= '9'; }
+constexpr bool is_dec_digit(char c) noexcept {
+  return c >= '0' && c <= '9';
+}
 
 constexpr bool is_hex_digit(char c) noexcept {
   return is_dec_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-constexpr bool is_ident_char(char c) noexcept { return is_alpha(c) || is_dec_digit(c); }
+constexpr bool is_ident_char(char c) noexcept {
+  return is_alpha(c) || is_dec_digit(c);
+}
 
 struct Keyword {
   std::string_view spelling;

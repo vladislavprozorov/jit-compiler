@@ -35,7 +35,9 @@ using enum TokenKind;
 
 }  // namespace
 
-void PrintTo(TokenKind kind, std::ostream* os) { *os << token_kind_name(kind); }
+void PrintTo(TokenKind kind, std::ostream* os) {
+  *os << token_kind_name(kind);
+}
 
 namespace {
 
@@ -48,9 +50,9 @@ TEST(Lexer, KeywordsAndIdentifiers) {
   EXPECT_EQ(kinds_of("fn let var if else while break continue return true false int float bool"),
             (std::vector{KwFn, KwLet, KwVar, KwIf, KwElse, KwWhile, KwBreak, KwContinue, KwReturn,
                          KwTrue, KwFalse, KwInt, KwFloat, KwBool, Eof}));
-  EXPECT_EQ(kinds_of("fnx _let let_ _ x1 Int"),
-            (std::vector{Identifier, Identifier, Identifier, Identifier, Identifier, Identifier,
-                         Eof}));
+  EXPECT_EQ(
+      kinds_of("fnx _let let_ _ x1 Int"),
+      (std::vector{Identifier, Identifier, Identifier, Identifier, Identifier, Identifier, Eof}));
 }
 
 TEST(Lexer, Punctuation) {
@@ -59,21 +61,21 @@ TEST(Lexer, Punctuation) {
 }
 
 TEST(Lexer, OperatorsUseMaximalMunch) {
-  EXPECT_EQ(kinds_of("+ - * / % & | ^ ~ << >> ! && || = == != < <= > >= += -= *= /= %="),
-            (std::vector{Plus,      Minus,      Star,       Slash,        Percent,
-                         Amp,       Pipe,       Caret,      Tilde,        LessLess,
-                         GreaterGreater,        Bang,       AmpAmp,       PipePipe,
-                         Equal,     EqualEqual, BangEqual,  Less,         LessEqual,
-                         Greater,   GreaterEqual,           PlusEqual,    MinusEqual,
-                         StarEqual, SlashEqual, PercentEqual, Eof}));
+  EXPECT_EQ(
+      kinds_of("+ - * / % & | ^ ~ << >> ! && || = == != < <= > >= += -= *= /= %="),
+      (std::vector{Plus,       Minus,        Star,         Slash,      Percent,        Amp,
+                   Pipe,       Caret,        Tilde,        LessLess,   GreaterGreater, Bang,
+                   AmpAmp,     PipePipe,     Equal,        EqualEqual, BangEqual,      Less,
+                   LessEqual,  Greater,      GreaterEqual, PlusEqual,  MinusEqual,     StarEqual,
+                   SlashEqual, PercentEqual, Eof}));
   EXPECT_EQ(kinds_of("a<=b"), (std::vector{Identifier, LessEqual, Identifier, Eof}));
   EXPECT_EQ(kinds_of("x--1"), (std::vector{Identifier, Minus, Minus, IntLiteral, Eof}));
 }
 
 TEST(Lexer, IntegerLiterals) {
-  EXPECT_EQ(kinds_of("0 42 1_000_000 0x1F 0XdeadBEEF 0xFF_FF"),
-            (std::vector{IntLiteral, IntLiteral, IntLiteral, IntLiteral, IntLiteral, IntLiteral,
-                         Eof}));
+  EXPECT_EQ(
+      kinds_of("0 42 1_000_000 0x1F 0XdeadBEEF 0xFF_FF"),
+      (std::vector{IntLiteral, IntLiteral, IntLiteral, IntLiteral, IntLiteral, IntLiteral, Eof}));
 }
 
 TEST(Lexer, FloatLiterals) {
@@ -135,25 +137,24 @@ TEST_P(LexerBadLiteral, ReportsSingleErrorToken) {
   EXPECT_EQ(diags.diagnostics()[0].message, GetParam().message);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Literals, LexerBadLiteral,
-    testing::Values(BadLiteral{"123abc", "invalid suffix on numeric literal"},
-                    BadLiteral{"1.5f", "invalid suffix on numeric literal"},
-                    BadLiteral{"1__0", "misplaced digit separator '_'"},
-                    BadLiteral{"1_", "misplaced digit separator '_'"},
-                    BadLiteral{"1.5_", "misplaced digit separator '_'"},
-                    BadLiteral{"0x", "malformed hexadecimal literal"},
-                    BadLiteral{"0x_1", "malformed hexadecimal literal"},
-                    BadLiteral{"0xFG", "invalid digit in hexadecimal literal"},
-                    BadLiteral{"1e", "expected digits in exponent"},
-                    BadLiteral{"1e+", "expected digits in exponent"}),
-    [](const testing::TestParamInfo<BadLiteral>& info) {
-      std::string name;
-      for (const char c : info.param.source) {
-        name += std::isalnum(static_cast<unsigned char>(c)) != 0 ? c : '_';
-      }
-      return name + "_" + std::to_string(info.index);
-    });
+INSTANTIATE_TEST_SUITE_P(Literals, LexerBadLiteral,
+                         testing::Values(BadLiteral{"123abc", "invalid suffix on numeric literal"},
+                                         BadLiteral{"1.5f", "invalid suffix on numeric literal"},
+                                         BadLiteral{"1__0", "misplaced digit separator '_'"},
+                                         BadLiteral{"1_", "misplaced digit separator '_'"},
+                                         BadLiteral{"1.5_", "misplaced digit separator '_'"},
+                                         BadLiteral{"0x", "malformed hexadecimal literal"},
+                                         BadLiteral{"0x_1", "malformed hexadecimal literal"},
+                                         BadLiteral{"0xFG", "invalid digit in hexadecimal literal"},
+                                         BadLiteral{"1e", "expected digits in exponent"},
+                                         BadLiteral{"1e+", "expected digits in exponent"}),
+                         [](const testing::TestParamInfo<BadLiteral>& info) {
+                           std::string name;
+                           for (const char c : info.param.source) {
+                             name += std::isalnum(static_cast<unsigned char>(c)) != 0 ? c : '_';
+                           }
+                           return name + "_" + std::to_string(info.index);
+                         });
 
 TEST(Lexer, UnexpectedCharacters) {
   DiagnosticEngine diags;
