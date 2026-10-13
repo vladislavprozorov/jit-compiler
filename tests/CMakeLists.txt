@@ -11,6 +11,7 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(kestrel_tests
+  arena_test.cpp
   diagnostics_test.cpp
   lexer_test.cpp
 )
