@@ -42,6 +42,8 @@ source ─► Lexer ─► Parser ─► AST ─► Sema ─► Bytecode ─► 
 - Control flow: `if`/`else`, `while`, `break`, `continue`, `return`
 - Functions with explicit parameter and return types, recursion
 - Operators: arithmetic, bitwise, shifts, comparisons, short-circuit `&&` / `||`
+- No implicit conversions: `to_float(int)`, `to_int(float)` convert explicitly
+- Builtins: `print` (overloaded for `int`, `float`, `bool`), `sqrt`, `to_float`, `to_int`
 - Literals: `1_000_000`, `0xFF`, `2.5e-3`; nested `/* */` comments
 
 ## Building
@@ -63,6 +65,7 @@ cmake -S . -B build-asan -G Ninja -DKESTREL_SANITIZE=ON
 Run:
 
 ```bash
+./build/kestrel examples/fib.ks
 ./build/kestrel --dump-tokens examples/fib.ks
 ./build/kestrel --dump-ast examples/fib.ks
 ```
@@ -91,6 +94,33 @@ Run:
 - **AST invariant.** The tree never contains half-built nodes: a construct with a syntax
   error is dropped as a whole.
 
+## Semantic analysis
+
+The checker annotates the AST in place, so later stages never look anything up by name:
+every expression gets its type, every variable reference gets a frame slot, every call
+gets its target function or builtin.
+
+- **Slot allocation with reuse.** Variables in sibling scopes share frame slots, so each
+  function's `local_count` is the minimum register file size the VM needs.
+- **No cascading errors.** An ill-typed expression yields an error type that parents
+  silently propagate; a variable whose initializer failed is usable without new errors.
+- **Control-flow analysis.** Non-void functions must return on every path; `while true`
+  without `break` counts as diverging; `break`/`continue` outside loops are rejected.
+- **Warnings.** Unused variables and parameters (silenced with a `_` prefix), unreachable
+  code, unused expression results.
+
+```
+bad.ks:8:16: error: argument 1 of 'area' must be 'float', found 'int'
+    let a = area(r);
+                 ^
+bad.ks:9:6: error: 'if' condition must be 'bool', found 'float'
+    if a {
+       ^
+bad.ks:6:4: error: function 'main' does not return a value on all paths
+  fn main() -> int {
+     ^
+```
+
 ## Operator precedence
 
 | Level | Operators                     | Associativity |
@@ -111,7 +141,7 @@ Run:
 - [x] Build system, CI (macOS/Linux arm64, ASan/UBSan), diagnostics
 - [x] Lexer
 - [x] Parser and AST, `--dump-ast`
-- [ ] Semantic analysis: name resolution, type checking
+- [x] Semantic analysis: name resolution, type checking, control-flow checks
 - [ ] Register-based bytecode and compiler, `--dump-bytecode`
 - [ ] Interpreter (computed-goto dispatch)
 - [ ] Executable memory (`MAP_JIT`, W^X) and AArch64 assembler
