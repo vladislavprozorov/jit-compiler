@@ -64,13 +64,53 @@ Run:
 
 ```bash
 ./build/kestrel --dump-tokens examples/fib.ks
+./build/kestrel --dump-ast examples/fib.ks
 ```
+
+```
+(fn fib (n: int) -> int
+  (block
+    (if (< n 2)
+      (block
+        (return n)))
+    (return (+ (call fib (- n 1)) (call fib (- n 2))))))
+```
+
+## Frontend design
+
+- **Arena-allocated AST.** Nodes are trivially destructible and live in a bump allocator;
+  the whole tree is freed at once. No `unique_ptr` per node, no virtual destructors.
+- **LLVM-style RTTI.** Each node carries a kind tag; `isa<T>`, `cast<T>`, `dyn_cast<T>`
+  replace `dynamic_cast`.
+- **Pratt expression parser** with explicit binding powers. Comparisons are
+  non-associative (`a < b < c` is an error), bitwise operators bind tighter than comparisons.
+- **Error recovery.** Panic mode with synchronization at statement and declaration
+  boundaries; lexer errors never cascade into parser errors.
+- **Bounded recursion.** Nesting depth is capped, so adversarial input such as
+  `((((...))))` produces a diagnostic instead of a stack overflow.
+- **AST invariant.** The tree never contains half-built nodes: a construct with a syntax
+  error is dropped as a whole.
+
+## Operator precedence
+
+| Level | Operators                     | Associativity |
+| ----- | ----------------------------- | ------------- |
+| 1     | `\|\|`                        | left          |
+| 2     | `&&`                          | left          |
+| 3     | `== != < <= > >=`             | none          |
+| 4     | `\|`                          | left          |
+| 5     | `^`                           | left          |
+| 6     | `&`                           | left          |
+| 7     | `<< >>`                       | left          |
+| 8     | `+ -`                         | left          |
+| 9     | `* / %`                       | left          |
+| 10    | unary `- ! ~`                 | prefix        |
 
 ## Roadmap
 
 - [x] Build system, CI (macOS/Linux arm64, ASan/UBSan), diagnostics
 - [x] Lexer
-- [ ] Parser and AST, `--dump-ast`
+- [x] Parser and AST, `--dump-ast`
 - [ ] Semantic analysis: name resolution, type checking
 - [ ] Register-based bytecode and compiler, `--dump-bytecode`
 - [ ] Interpreter (computed-goto dispatch)
