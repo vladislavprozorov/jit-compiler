@@ -9,23 +9,25 @@
 #include "frontend/ast_printer.h"
 #include "frontend/lexer.h"
 #include "frontend/parser.h"
+#include "frontend/sema.h"
 #include "support/arena.h"
 #include "support/diagnostics.h"
 
 namespace {
 
 constexpr std::string_view kUsage =
-    "usage: kestrel [--dump-tokens | --dump-ast] <file.ks>\n"
+    "usage: kestrel [--check | --dump-tokens | --dump-ast] <file.ks>\n"
     "\n"
     "options:\n"
+    "  --check         type-check the program and report diagnostics (default)\n"
     "  --dump-tokens   print the token stream and exit\n"
     "  --dump-ast      print the syntax tree and exit\n"
     "  -h, --help      show this message\n";
 
-enum class Mode { DumpTokens, DumpAst };
+enum class Mode { Check, DumpTokens, DumpAst };
 
 struct Options {
-  Mode mode = Mode::DumpAst;
+  Mode mode = Mode::Check;
   std::string path;
 };
 
@@ -39,7 +41,9 @@ std::optional<Options> parse_args(int argc, char** argv, int& exit_code) {
       exit_code = 0;
       return std::nullopt;
     }
-    if (arg == "--dump-tokens") {
+    if (arg == "--check") {
+      options.mode = Mode::Check;
+    } else if (arg == "--dump-tokens") {
       options.mode = Mode::DumpTokens;
     } else if (arg == "--dump-ast") {
       options.mode = Mode::DumpAst;
@@ -91,6 +95,15 @@ void dump_ast(std::string_view source, kestrel::DiagnosticEngine& diags) {
   std::cout << kestrel::print_module(module);
 }
 
+void check(std::string_view source, kestrel::DiagnosticEngine& diags) {
+  kestrel::Arena arena;
+  kestrel::Parser parser(source, arena, diags);
+  kestrel::Module module = parser.parse_module();
+  if (!diags.has_errors()) {
+    static_cast<void>(kestrel::analyze(module, diags));
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -108,6 +121,9 @@ int main(int argc, char** argv) {
 
   kestrel::DiagnosticEngine diags;
   switch (options->mode) {
+    case Mode::Check:
+      check(*source, diags);
+      break;
     case Mode::DumpTokens:
       dump_tokens(*source, diags);
       break;
@@ -116,9 +132,6 @@ int main(int argc, char** argv) {
       break;
   }
 
-  if (diags.has_errors()) {
-    std::cerr << diags.render(options->path, *source);
-    return 1;
-  }
-  return 0;
+  std::cerr << diags.render(options->path, *source);
+  return diags.has_errors() ? 1 : 0;
 }
