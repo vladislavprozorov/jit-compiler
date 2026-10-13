@@ -15,6 +15,7 @@ add_executable(kestrel_tests
   diagnostics_test.cpp
   lexer_test.cpp
   parser_test.cpp
+  sema_test.cpp
 )
 target_link_libraries(kestrel_tests PRIVATE kestrel_core GTest::gtest_main)
 
