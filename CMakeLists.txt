@@ -32,6 +32,7 @@ add_library(kestrel_core
   src/frontend/ast.cpp
   src/frontend/ast_printer.cpp
   src/frontend/lexer.cpp
+  src/frontend/parser.cpp
   src/support/arena.cpp
   src/support/diagnostics.cpp
 )
