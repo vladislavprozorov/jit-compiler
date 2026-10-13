@@ -16,6 +16,24 @@ std::string_view type_kind_name(TypeKind kind) noexcept {
   return "<invalid type>";
 }
 
+std::string_view builtin_name(Builtin builtin) noexcept {
+  switch (builtin) {
+    case Builtin::None:
+      return "<none>";
+    case Builtin::PrintInt:
+    case Builtin::PrintFloat:
+    case Builtin::PrintBool:
+      return "print";
+    case Builtin::ToFloat:
+      return "to_float";
+    case Builtin::ToInt:
+      return "to_int";
+    case Builtin::Sqrt:
+      return "sqrt";
+  }
+  return "<invalid builtin>";
+}
+
 std::string_view unary_op_spelling(UnaryOp op) noexcept {
   switch (op) {
     case UnaryOp::Neg:

@@ -85,9 +85,16 @@ enum class ExprKind : std::uint8_t {
   Call
 };
 
+using SlotIndex = std::uint32_t;
+
+enum class Builtin : std::uint8_t { None, PrintInt, PrintFloat, PrintBool, ToFloat, ToInt, Sqrt };
+
+[[nodiscard]] std::string_view builtin_name(Builtin builtin) noexcept;
+
 struct Expr {
   const ExprKind kind;
   const SourceLocation location;
+  TypeKind type = TypeKind::Void;
 
  protected:
   Expr(ExprKind k, SourceLocation loc) noexcept : kind(k), location(loc) {}
@@ -115,6 +122,7 @@ struct NameExpr : Expr {
   static constexpr ExprKind kKind = ExprKind::Name;
   NameExpr(SourceLocation loc, std::string_view n) noexcept : Expr(kKind, loc), name(n) {}
   std::string_view name;
+  SlotIndex slot = 0;
 };
 
 struct UnaryExpr : Expr {
@@ -134,12 +142,16 @@ struct BinaryExpr : Expr {
   Expr* rhs;
 };
 
+struct FnDecl;
+
 struct CallExpr : Expr {
   static constexpr ExprKind kKind = ExprKind::Call;
   CallExpr(SourceLocation loc, std::string_view c, std::span<Expr*> a) noexcept
       : Expr(kKind, loc), callee(c), args(a) {}
   std::string_view callee;
   std::span<Expr*> args;
+  const FnDecl* function = nullptr;
+  Builtin builtin = Builtin::None;
 };
 
 enum class StmtKind : std::uint8_t { Block, Let, Assign, Expr, If, While, Break, Continue, Return };
@@ -167,6 +179,7 @@ struct LetStmt : Stmt {
   std::string_view name;
   std::optional<TypeRef> type;
   Expr* init;
+  SlotIndex slot = 0;
 };
 
 struct AssignStmt : Stmt {
@@ -229,6 +242,8 @@ struct FnDecl {
   std::span<Param> params;
   TypeRef return_type;
   BlockStmt* body;
+  std::uint32_t index = 0;
+  std::uint32_t local_count = 0;
 };
 
 struct Module {
